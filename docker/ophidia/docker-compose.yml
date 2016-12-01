@@ -14,6 +14,8 @@ services:
       - ophidia
     ports:
       - "8000:8000"
+    volumes:
+      - /Users/doutriaux1/MyData:/ServedData
     volumes_from:
       - thredds
 

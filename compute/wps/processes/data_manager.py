@@ -25,7 +25,7 @@ class NetCDFHandler(object):
     def create_dodsrc(self, output_file, cookie_jar, pem_path, ca_dir):
         # Update .dodsrc for netcdf library
         with open(output_file, 'w') as new_file:
-            new_file.write('HTTP.VERBOSE=1\n')
+            new_file.write('HTTP.VERBOSE=0\n')
             new_file.write('HTTP.COOKIEJAR=%s\n' % (cookie_jar,))
             new_file.write('HTTP.SSL.VALIDATE=0\n')
             new_file.write('HTTP.SSL.CERTIFICATE=%s\n' % (pem_path,))
