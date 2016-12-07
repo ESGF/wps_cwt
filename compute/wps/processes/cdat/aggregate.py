@@ -89,6 +89,7 @@ class AggregateOperation(esgf_operation.ESGFOperation):
                 status("KARGS: %s" % kargs)
                 data = V(time=slice(i,i+step),**kargs)
                 t = data.getTime()
+                status("WROTE TIMES: %s" % repr(t.asComponentTime()))
                 if final_units is None:
                     final_units = t.units
 
