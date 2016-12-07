@@ -11,9 +11,13 @@ from wps.processes.esgf_operation import create_from_def
 
 class CDATEnsemble(esgf_operation.ESGFOperation):
     KNOWN_GRIDS = {
+        't21': {
+            'func': cdms2.createGaussianGrid,
+            'args': [32,]
+        },
         't42': {
             'func': cdms2.createGaussianGrid,
-            'args': [128]
+            'args': [128,]
         }
     }
 
@@ -24,121 +28,86 @@ class CDATEnsemble(esgf_operation.ESGFOperation):
     def title(self):
         return 'CDAT Ensemble'
 
-    def __call__(self, data_manager, status):
-        var = [x for x in self.input() if isinstance(x, esgf.Variable)]
-
-        var_name = None
-
-        if len(var):
-            var_name = var[0].var_name
-
-        src = [data_manager.metadata(x) for x in var
-               if isinstance(x, esgf.Variable)]
-
-        # Find inputs that are operations and execute them appending the
-        # input list
-        # NOTE this will be moved into workflow at some point
-        input_ops = [x for x in self.input() if isinstance(x, esgf.Operation)]
-
-        for inp in input_ops:
-            logger.debug('Executing child operation %s', inp.identifier)
-
-            op = create_from_def(inp)
-
-            if self.domain:
-                op.data.domain = self.domain
-
-            op.__call__(data_manager, status)
-
-            src.append(data_manager.metadata(op.output))
-
-            # If we couldn't get the variable name from source files,
-            # take the first name from input operation outputs
-            if not var_name:
-                var_name = op.output.var_name
-
-        # assumed all files are from the same model
-        # TODO add some validation
-        time = [x.getTime() for x in src]
-
-        temporal, spatial = self._gen_domains(src[0].getAxisList(),
-                                              time[0],
-                                              self.domain)
         
-        logger.debug('Spatial domain %r', spatial)
+    def __call__(self, data_manager, status):
+        # First dodsrc thing just in case
 
-        start, end, step = self._convert_temporal_domain(time[0], temporal)
+        data_manager.metadata(self.input()[0])
 
-        logger.debug('Temporal domain: start=%s stop=%s step=%s', start, end, step)
-
+        output_path = config.getConfigValue('server', 'outputPath', '/var/wps')
         new_file_name = '%s.nc' % (str(uuid.uuid4()),)
-        new_file_path = config.getConfigValue('server', 'outputPath', '/var/wps')
-        new_file = os.path.join(new_file_path, new_file_name)
+        new_file = os.path.join(output_path, new_file_name)
 
-        logger.debug('Writing file to %s', new_file)
-
-        fout = cdms2.open(new_file, 'w')
-
-        denom = len(src)
-
+        # Target grid
         target_grid = None
 
         gridder = self.parameter('gridder', required=False)
-
+        status("GRIDDER: %s" % repr(gridder))
         # Build the target grid if gridder is passed to the operation
         if gridder:
+            tool="esmf"
+            method="linear"
+            status("GRIIDER EXTRACT: %s, %s" % (gridder.tool,gridder.method))
             if isinstance(gridder.grid, esgf.Domain):
                 target_grid = self._create_grid_from_domain(gridder.grid)
+                tool = gridder.tool
+                method = gridder.method
             elif isinstance(gridder.grid, esgf.Variable):
+                status("GRIDDER FROM VAR %s" % gridder.grid)
                 with cdms2.open(gridder.grid.uri, 'r') as grid_file:
                     var = grid_file[gridder.grid.var_name]
-
                     target_grid = var.getGrid()
             elif isinstance(gridder.grid, (str, unicode)):
                 try:
+                    status("KNOWN GRIDS %s" % self.KNOWN_GRIDS)
                     grid = self.KNOWN_GRIDS[gridder.grid.lower()]
+                    status("SELECTED GRIIIIIDDDDDDDDD %s" % grid)
+                    tool = gridder.tool
+                    method = gridder.method
                 except KeyError:
                     raise esgf.WPSServerError('Unknown target grid %s' %
                                               (gridder.grid,))
 
                 target_grid = grid['func'](*grid['args'])
+                status("CREATTTTTREEEEEDDDDD GRID %s" % target_grid)
             else:
                 raise esgf.WPSServerError(
                     'Unknown value passed as target grid %r' % (gridder.grid,))
-
-            logger.debug('Target grid %r', target_grid)
-
-        for i in xrange(start, end, step):
-            logger.debug('Averaging time slice %s', i)
-
-            # Grab indexed time slice relative to it's own timeline
-            # Apply spatial subset if present
-            data = [x(time=time[j][i], **spatial) for j, x in enumerate(src)]
-
-            # Regrid slice
-            if target_grid:
-                data = [x.regrid(target_grid,
-                                 regridTool=gridder.tool,
-                                 regridMethod=gridder.method) for x in data]
-
-            data_sum = reduce(lambda x, y: x + y, data)
-
-            data_avg = data_sum / denom
-
-            fout.write(data_avg, id=var_name) 
-
-            del data[:]
-            del data_sum
-            del data_avg
-
-        fout.close()
-
+        
+        fo = cdms2.open(new_file,"w")
+        step = 200
+        # Figures out shape (from first file)
+        v=self.input()[0]
+        f=cdms2.open(v.uri)
+        V=f[v.var_name]
+        sh =V.shape
+        f.close()
+        n = sh[0]
+        out = None
+        for i in range(0,n,step):
+            for iv, v in enumerate(self.input()):
+                status("LOOKING AT FILE: %s" % v.uri)
+                f=cdms2.open(v.uri)
+                V = f(v.var_name,slice(i,i+step)) 
+                if target_grid is not None:
+                    status("REGRIDDING: %s, %s, %s" % (target_grid,tool,method))
+                    status("SHPE B4: %s" % str(V.shape))
+                    V=V.regrid(target_grid,regridTool=tool,regridMethod=method)
+                    status("SHPE AFTER: %s" % str(V.shape))
+                if iv==0:
+                    out = V
+                    vnm = v.var_name
+                else:
+                    out[:]+=V[:]
+            out/=(iv+1)
+            fo.write(out,id=vnm)
+        fo.close()
         dap_url = self.create_dap_url(new_file_name)
+        self.set_output(dap_url, vnm) 
 
-        #self.set_output(dap_url, var_name)
-        self.set_output(new_file, var_name)
 
-    def _creaate_grid_from_domain(self, domain):
+
+    def _create_grid_from_domain(self, domain):
         lat = self._find_dimension(domain, ('latitude', 'lat'))
 
         lon = self._find_dimension(domain, ('longitude', 'lon'))
