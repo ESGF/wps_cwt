@@ -24,6 +24,10 @@ data:
     user={{ .Values.wps.email.user | default "" }}
     password={{ .Values.wps.email.password | default "" }}
 
+    [metrics]
+    host=http://{{ template "prometheus-server.fullname" . }}/prometheus/api/v1/query
+    host.archive=http://{{ template "prometheus-server.fullname" . }}/prometheus/api/v1/query
+
     [wps]
     wps.dap=true
     wps.endpoint=http://{{ .Values.host }}/wps/
