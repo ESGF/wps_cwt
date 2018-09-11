@@ -36,6 +36,14 @@ def query_prometheus(**kwargs):
 
     return data['data']['result']
 
+def query_single_value(**kwargs):
+    try:
+        data = query_prometheus(**kwargs)[0]
+    except IndexError:
+        return None
+
+    return data['value'][1]
+
 @base.register_process('CDAT.metrics', abstract="""
                        Returns the current metrics of the server.
                        """, data_inputs=[], metadata={'inputs': 0})
@@ -43,34 +51,31 @@ def query_prometheus(**kwargs):
 def health(self, user_id, job_id, **kwargs):
     job = self.load_job(job_id)
 
-    jobs_running = metrics.jobs_running()
-
-    jobs_queued = metrics.jobs_queued()
-
-    download = query_prometheus(query='sum(delta(wps_ingress_bytes[1d]))')
-
-    upload = query_prometheus(query='sum(delta(wps_upload_bytes[1d]))')
-
-    cpu = query_prometheus(query='avg(100-(irate(node_cpu_seconds_total{mode="idle"}[1d])*100))')
-
-    nodes = query_prometheus(query='machine_cpu_cores')
-
     data = {
-        'usage': {
-            'files': None,
-            'services': [],
-            'data': {
-                'units': 'Bytes',
-                'download': download[0]['value'][1],
-                'upload': upload[0]['value'][1],
-            }
-        },
         'health': {
-            'users': None,
-            'queued': jobs_queued,
-            'running': jobs_running,
-            'nodes': len(nodes),
-            'cpu': cpu[0]['value'][1],
+            'jobs_running': 0,
+            'jobs_queued': 0,
+            'users_running': 0,
+            'users_queued': 0,
+            'cpu_avg': 0,
+            'cpu_min': 0,
+            'cpu_max': 0,
+            'cpu_count': 0,
+            'memory_avg': 0,
+            'memory_min': 0,
+            'memory_max': 0,
+            'memory_available': 0,
+            'disk_free_space': 0,
+            'wps_requests_avg': 0,
+        },
+        'usage': {
+            'files': {
+            },
+            'operators': {
+            },
+            'download': 0,
+            'local': 0,
+            'output': 0,
         },
         'time': timezone.now().ctime(),
     }
