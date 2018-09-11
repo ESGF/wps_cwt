@@ -8,10 +8,6 @@ metadata:
     chart: {{ template "esgf-compute-wps.chart" $ }}
     release: {{ $.Release.Name }}
     heritage: {{ $.Release.Service }}
-{{- if .annotations }}
-  annotations:
-  {{- .annotations | toYaml | trimSuffix "\n" | nindent 4 }}
-{{- end }}
 spec:
   replicas: {{ .replicas }}
   selector:
@@ -25,6 +21,10 @@ spec:
         chart: {{ template "esgf-compute-wps.chart" $ }}
         release: {{ $.Release.Name }}
         heritage: {{ $.Release.Service }}
+    {{- if .annotations }}
+      annotations:
+      {{- .annotations | toYaml | trimSuffix "\n" | nindent 8 }}
+    {{- end }}
     spec:
       containers:
       - name: {{ $.Release.Name }}-celery-{{ .name }}
