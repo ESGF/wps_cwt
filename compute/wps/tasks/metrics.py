@@ -36,13 +36,13 @@ def query_prometheus(**kwargs):
 
     return data['data']['result']
 
-def query_single_value(**kwargs):
+def query_single_value(type=str, **kwargs):
     try:
         data = query_prometheus(**kwargs)[0]
     except IndexError:
         return None
 
-    return data['value'][1]
+    return type(data['value'][1])
 
 @base.register_process('CDAT.metrics', abstract="""
                        Returns the current metrics of the server.
@@ -60,11 +60,12 @@ def health(self, user_id, job_id, **kwargs):
             'cpu_avg': 0,
             'cpu_min': 0,
             'cpu_max': 0,
-            'cpu_count': 0,
+            'cpu_count': query_single_value(type=int, query='sum(machine_cpu_cores)'),
             'memory_avg': 0,
             'memory_min': 0,
             'memory_max': 0,
-            'memory_available': 0,
+            'memory_available': query_single_value(type=int,
+                                                   query='sum(machine_memory_bytes)'),
             'disk_free_space': 0,
             'wps_requests_avg': 0,
         },
