@@ -2,19 +2,11 @@ apiVersion: apps/v1beta2
 kind: Deployment
 metadata:
   name: {{ .Release.Name }}-wps
-  annotations:
-    prometheus.io/scrape: "true"
-    prometheus.io/path: /wps/metrics
-    prometheus.io/port: "8000"
   labels:
     app: {{ .Release.Name }}-wps
     chart: {{ template "esgf-compute-wps.chart" . }}
     release: {{ .Release.Name }}
     heritage: {{ .Release.Service }}
-{{- if $.Values.wps.annotations }}
-  annotations:
-    {{ toYaml $.Values.wps.annotations | indent 2 }}
-{{- end }}
 spec:
   replicas: {{ .Values.wps.replicas }}
   selector:
@@ -28,6 +20,10 @@ spec:
         chart: {{ template "esgf-compute-wps.chart" . }}
         release: {{ .Release.Name }}
         heritage: {{ .Release.Service }}
+    {{- if .Values.wps.annotations }}
+      annotations:
+      {{- .Values.wps.annotations | toYaml | trimSuffix "\n" | nindent 8 }}
+    {{- end }}
     spec:
       containers:
       - name: {{ .Release.Name }}-wps
