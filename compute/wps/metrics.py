@@ -43,15 +43,20 @@ if 'CWT_METRICS' in os.environ:
 else:
     WPS = REGISTRY
 
-USERS_ACTIVE = Gauge('wps_users_active', 'Number of active users')
+JOBS_IN_QUEUE = Gauge('wps_jobs_in_queue', 'Number of jobs waiting in queue',
+                      multiprocess_mode='livesum')
 
-USERS = Counter('wps_users', 'Number of registered users')
-
-JOBS_QUEUED = Gauge('wps_jobs_queued', 'Number of jobs queued',
-                    multiprocess_mode='livesum')
-
-JOBS_RUNNING = Gauge('wps_jobs_running', 'Number of jobs running',
+JOBS_RUNNING = Gauge('wps_jobs_running', 'Number of jobs currently running',
                      multiprocess_mode='livesum')
+
+JOBS_QUEUED = Counter('wps_jobs_queued_total', 'Number of total jobs queued',
+                      ['identifier'])
+
+JOBS_COMPLETED = Counter('wps_jobs_completed_total', 'Number of total jobs'
+                         'completed', ['identifier'])
+
+JOBS_FAILED = Counter('wps_jobs_failed_total', 'Number of total jobs failed',
+                      ['identifier'])
 
 PROCESS_BYTES = Counter('wps_process_bytes', 'Number of bytes processed',
                         ['identifier'])
@@ -70,25 +75,8 @@ CACHE_BYTES = Gauge('wps_cache_bytes', 'Number of cached bytes',
 CACHE_FILES = Gauge('wps_cache_files', 'Number of cached files',
                     multiprocess_mode='livesum')
 
-WPS_OPERATION = Counter('wps_operation', 'Number of times an operation has been'
-                        'requested', ['identifier'])
-
-WPS_CAPABILITIES = Summary('wps_get_capabilities_seconds',
-                             'WPS GetCapabilities', ['method'])
-
-WPS_CAPABILITIES_GET = WPS_CAPABILITIES.labels('get')
-WPS_CAPABILITIES_POST = WPS_CAPABILITIES.labels('post')
-
-WPS_DESCRIBE = Summary('wps_describe_process_seconds', 'WPS DescribeProcess', 
-                         ['method'])
-
-WPS_DESCRIBE_GET = WPS_DESCRIBE.labels('get')
-WPS_DESCRIBE_POST = WPS_DESCRIBE.labels('post')
-
-WPS_EXECUTE = Summary('wps_execute_seconds', 'WPS Execute', ['method'])
-
-WPS_EXECUTE_GET = WPS_EXECUTE.labels('get')
-WPS_EXECUTE_POST = WPS_EXECUTE.labels('post')
+WPS_REQUESTS = Histogram('wps_request_seconds', 'WPS request duration (seconds)', ['request',
+                                                                                   'method'])
 
 WPS_ERRORS = Counter('wps_errors', 'WPS Errors')
 

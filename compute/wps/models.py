@@ -16,6 +16,7 @@ import cwt
 from django.conf import settings
 from django.contrib.auth.models import User
 from django.db import models
+from django.db import transaction
 from django.db.models import F
 from django.db.models import signals
 from django.db.models.query_utils import Q
@@ -26,6 +27,7 @@ from openid.store import nonce
 
 import wps
 from wps import helpers
+from wps import metrics
 
 logger = logging.getLogger('wps.models')
 
@@ -533,33 +535,49 @@ class Job(models.Model):
     def accepted(self):
         self.status_set.create(status=ProcessAccepted)
 
-    def started(self):
-        if not self.is_started:
-            status = self.status_set.create(status=ProcessStarted)
+        metrics.JOBS_IN_QUEUE.inc()
 
-            status.set_message('Job Started', self.steps_progress)
+        metrics.JOBS_QUEUED.labels(self.process.identifier).inc()
+
+    def started(self):
+        status = self.status_set.create(status=ProcessStarted)
+
+        status.set_message('Job Started', self.steps_progress)
+
+        metrics.JOBS_IN_QUEUE.dec()
+
+        metrics.JOBS_RUNNING.inc()
 
     def succeeded(self, output=None):
-        self.update('Job succeeded')
-
-        status = self.status_set.create(status=ProcessSucceeded)
-
         if output is None:
             output = ''
+
+        status = self.status_set.create(status=ProcessSucceeded)
 
         status.output = output
 
         status.save()
 
+        metrics.JOBS_RUNNING.dec()
+
+        metrics.JOBS_COMPLETED.labels(self.process.identifier).inc()
+
     def failed(self, exception=None):
         self.update('Job Failed')
 
-        status, created = self.status_set.get_or_create(status=ProcessFailed)
+        if exception is None:
+            exception = 'Unknown reason'
 
-        if created and exception is not None:
+        with transaction.atomic():
+            status = self.status_set.create(status=ProcessFailed)
+
             status.exception = wps.exception_report(exception, cwt.ows.NoApplicableCode)
 
             status.save()
+
+            metrics.JOBS_RUNNING.dec()
+
+            metrics.JOBS_FAILED.labels(self.process.identifier).inc()
 
     def retry(self, exception):
         self.update('Retrying... {}', exception)

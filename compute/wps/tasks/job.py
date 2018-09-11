@@ -16,18 +16,10 @@ from wps.tasks import base
 logger = get_task_logger('wps.tasks.job')
 
 @base.cwt_shared_task()
-def job_error(**kwargs):
-    logger.info('Error %r', kwargs)
-
-@base.cwt_shared_task()
 def job_started(self, job_id):
     job = self.load_job(job_id)
 
     job.started()
-
-    metrics.JOBS_QUEUED.set(metrics.jobs_queued())
-
-    metrics.JOBS_RUNNING.set(metrics.jobs_running())
 
 @base.cwt_shared_task()
 def job_succeeded(self, attrs, variables, output_path, move_path, var_name,
@@ -55,8 +47,6 @@ def job_succeeded(self, attrs, variables, output_path, move_path, var_name,
     output = cwt.Variable(url, var_name)
 
     job.succeeded(json.dumps(output.parameterize()))
-
-    metrics.JOBS_RUNNING.set(metrics.jobs_running())
 
     process.track(user)
 

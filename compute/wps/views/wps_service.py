@@ -236,9 +236,6 @@ def handle_execute(api_key, identifier, data_inputs):
 
     job = models.Job.objects.create(server=server, process=process, user=user, extra=json.dumps(data_inputs))
 
-    # at this point we've accepted the job
-    job.accepted()
-
     kwargs.update({
         'identifier': identifier,
         'user': user,
@@ -258,9 +255,8 @@ def handle_execute(api_key, identifier, data_inputs):
 
         raise
 
-    metrics.WPS_OPERATION.labels(identifier.lower()).inc()
-
-    metrics.JOBS_QUEUED.set(metrics.jobs_queued())
+    # at this point we've accepted the job
+    job.accepted()
 
     return job.report
 
@@ -275,12 +271,12 @@ def handle_get(params, query_string):
     logger.info('GET request %r, service %r', request, service)
 
     if request == 'getcapabilities':
-        with metrics.WPS_CAPABILITIES_GET.time():
+        with metrics.WPS_REQUESTS.labels('GetCapabilities', 'GET').time():
             response = handle_get_capabilities() 
     elif request == 'describeprocess':
         identifier = get_parameter(params, 'identifier', True).split(',')
 
-        with metrics.WPS_DESCRIBE_GET.time():
+        with metrics.WPS_REQUESTS.labels('DescribeProcess', 'GET').time():
             response = handle_describe_process(identifier)
     elif request == 'execute':
         api_key = get_parameter(params, 'api_key', True)
@@ -300,7 +296,7 @@ def handle_get(params, query_string):
 
                 data_inputs = dict(x.split('=') for x in data_inputs.split(';'))
 
-        with metrics.WPS_EXECUTE_GET.time():
+        with metrics.WPS_REQUESTS.labels('Execute', 'GET').time():
             response = handle_execute(api_key, identifier, data_inputs)
     else:
         raise WPSError('Operation "{name}" is not supported', name=request)
@@ -331,7 +327,7 @@ def handle_post(data, params):
 
     logger.info('Handling POST request for API key %s', api_key)
 
-    with metrics.WPS_EXECUTE_POST.time():
+    with metrics.WPS_REQUESTS.labels('Execute', 'POST').time():
         response = handle_execute(api_key, request.Identifier.value(), data_inputs)
 
     return response
