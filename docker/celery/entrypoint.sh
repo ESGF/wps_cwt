@@ -30,7 +30,7 @@ if [[ -n "${CWT_METRICS}" ]]; then
   fi
 fi
 
-trap "{ kill -9 ${celery_pid}; kill -9 ${metrics_pid}; rm -rf ${CWT_METRICS}; }" SIGINT SIGTERM
+trap "{ kill -9 ${celery_pid}; kill -9 ${metrics_pid}; rm -f ${CWT_METRICS}/*gauge*;" SIGINT SIGTERM
 
 while sleep 60; do
   if [[ $(kill -0 ${celery_pid}) -ne 0 ]]; then
