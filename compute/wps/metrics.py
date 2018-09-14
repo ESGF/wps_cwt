@@ -69,8 +69,9 @@ INGRESS_BYTES = Counter('wps_ingress_bytes', 'Number of ingressed bytes', ['host
 INGRESS_SECONDS = Counter('wps_ingress_seconds', 'Number of seconds spent'
                           'ingressing data', ['host'])
 
-CACHE_BYTES = Gauge('wps_cache_bytes', 'Number of cached bytes',
-                    multiprocess_mode='livesum')
+CACHE_BYTES = Counter('wps_cache_bytes', 'Number of cached bytes')
+
+CACHE_SECONDS = Counter('wps_cache_seconds', 'Number of seconds spent reading cache')
 
 CACHE_FILES = Gauge('wps_cache_files', 'Number of cached files',
                     multiprocess_mode='livesum')

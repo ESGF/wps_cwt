@@ -63,6 +63,8 @@ def retrieve_data(infile, outfile, var_name, grid, gridder, base_units, mapped=N
 
     outfile.write(data, id=var_name)
 
+    return data
+
 def retrieve_data_cached(self, infile, outfile, var_name, grid, gridder, base_units, mapped, chunk_axis, chunk_list, **kwargs):
     """ Retrieves cached data.
 
@@ -79,7 +81,15 @@ def retrieve_data_cached(self, infile, outfile, var_name, grid, gridder, base_un
     for chunk in chunk_list:
         mapped.update({chunk_axis: chunk})
 
-        retrieve_data(infile, outfile, var_name, grid, gridder, base_units, mapped)
+        start = self.get_now()
+
+        data = retrieve_data(infile, outfile, var_name, grid, gridder, base_units, mapped)
+
+        elapsed = self.get_now() - start
+
+        metrics.CACHE_BYTES.inc(data.nbytes)
+
+        metrics.CACHE_SECONDS.inc(elapsed.total_seconds())
 
 def base_retrieve(self, attrs, keys, operation, var_name, base_units, output_path, job_id):
     """ Retrieve file(s).
@@ -220,11 +230,19 @@ def base_process(self, attrs, key, operation, var_name, base_units, axes, output
 
     mapped = inp.get('mapped', {})
 
-    start = self.get_now()
-
     # Read input data
     with self.open(inp['path']) as infile:
+        start = self.get_now()
+
         data = infile(var_name, **mapped)
+
+        elapsed = self.get_now() - start
+
+        metrics.CACHE_BYTES.inc(data.nbytes)
+
+        metrics.CACHE_SECONDS.inc(elapsed.total_seconds())
+
+    start = self.get_now()
 
     # Generate grid if needed
     if gridder is not None:
