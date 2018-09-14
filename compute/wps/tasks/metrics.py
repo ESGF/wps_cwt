@@ -47,13 +47,13 @@ def query_single_value(type=str, **kwargs):
 
     return type(data['value'][1])
 
-def query_multiple_value(type=str, **kwargs):
+def query_multiple_value(key, type=str, **kwargs):
     results = {}
 
     data = query_prometheus(**kwargs)
 
     for item in data:
-        name = item['metric']['request']
+        name = item['metric'][key]
 
         value = item['value'][1]
 
@@ -75,9 +75,9 @@ def health(self, user_id, job_id, **kwargs):
     user_jobs_running = models.Job.objects.filter(status__status=models.ProcessStarted).exclude(
         status__status=models.ProcessFailed).exclude(status__status=models.ProcessSucceeded).count()
 
-    operator_count = query_multiple_value(type=float, query='sum(wps_request_seconds_count) by (request)')
+    operator_count = query_multiple_value('request', type=float, query='sum(wps_request_seconds_count) by (request)')
 
-    operator_avg_time = query_multiple_value(type=float,
+    operator_avg_time = query_multiple_value('request', type=float,
                                              query='avg(wps_request_seconds_sum) by (request)')
 
     operator = {}
@@ -90,6 +90,22 @@ def health(self, user_id, job_id, **kwargs):
 
         if item in operator_avg_time:
             operator[item]['avg_time'] = operator_avg_time[item]
+
+    file_count = query_multiple_value('url', query='sum(wps_file_accessed{url!=""}) by (url)')
+
+    file = {}
+
+    for item in file_count.keys():
+        logger.info('%r', item)
+
+        try:
+            url_obj = models.File.objects.filter(url=item)[0]
+        except IndexError:
+            count = 0
+        else:
+            count = url_obj.userfile_set.all().distinct('user').count()
+
+        file[item] = {'count': file_count[item], 'unique_users': count }
 
     data = {
         'health': {
@@ -114,8 +130,7 @@ def health(self, user_id, job_id, **kwargs):
                                                    query='sum(avg_over_time(wps_request_seconds_count[5m]))'),
         },
         'usage': {
-            'files': {
-            },
+            'files': file,
             'operators': operator,
             'output': query_single_value(type=float,
                                            query='sum(wps_process_bytes/wps_process_seconds >= 0)'),

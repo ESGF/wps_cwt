@@ -1,5 +1,6 @@
 import os
 import sys
+import urlparse
 
 if 'CWT_METRICS' in os.environ:
     os.environ['prometheus_multiproc_dir'] = os.environ['CWT_METRICS']
@@ -12,6 +13,14 @@ from prometheus_client import CollectorRegistry
 from prometheus_client import REGISTRY
 
 from celery.task.control import inspect
+
+def track_file(variable):
+    parts = urlparse.urlparse(variable.uri)
+
+    filename = parts.path.split()[-1]
+
+    FILE_ACCESSED.labels(parts.hostname, filename, variable.uri,
+                                 variable.var_name).inc()
 
 def jobs_queued():
     i = inspect()
@@ -76,10 +85,13 @@ CACHE_SECONDS = Counter('wps_cache_seconds', 'Number of seconds spent reading ca
 CACHE_FILES = Gauge('wps_cache_files', 'Number of cached files',
                     multiprocess_mode='livesum')
 
-WPS_REQUESTS = Histogram('wps_request_seconds', 'WPS request duration (seconds)', ['request',
-                                                                                   'method'])
+WPS_REQUESTS = Histogram('wps_request_seconds', 'WPS request duration (seconds)', 
+                         ['request', 'method'])
 
 WPS_ERRORS = Counter('wps_errors', 'WPS Errors')
+
+FILE_ACCESSED = Counter('wps_file_accessed', 'Number of times files were accessed', 
+                        ['host', 'filename', 'url', 'variable'])
 
 def serve_metrics():
     from prometheus_client import make_wsgi_app
