@@ -53,4 +53,6 @@ def job_succeeded(self, attrs, variables, output_path, move_path, var_name,
     for var in variables:
         models.File.track(user, var)
 
+        metrics.track_file(var)
+
     return attrs
