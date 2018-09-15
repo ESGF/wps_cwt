@@ -14,13 +14,15 @@ from prometheus_client import REGISTRY
 
 from celery.task.control import inspect
 
+
 def track_file(variable):
     parts = urlparse.urlparse(variable.uri)
 
     filename = parts.path.split()[-1]
 
     FILE_ACCESSED.labels(parts.hostname, filename, variable.uri,
-                                 variable.var_name).inc()
+                         variable.var_name).inc()
+
 
 def jobs_queued():
     i = inspect()
@@ -37,6 +39,7 @@ def jobs_queued():
 
     return scheduled + reserved
 
+
 def jobs_running():
     i = inspect()
 
@@ -46,6 +49,21 @@ def jobs_running():
         active = 0
 
     return active
+
+
+def serve_metrics():
+    from prometheus_client import make_wsgi_app
+    from prometheus_client import multiprocess
+    from wsgiref.simple_server import make_server
+
+    multiprocess.MultiProcessCollector(WPS)
+
+    app = make_wsgi_app(WPS)
+
+    httpd = make_server('0.0.0.0', 8080, app)
+
+    httpd.serve_forever()
+
 
 if 'CWT_METRICS' in os.environ:
     WPS = CollectorRegistry()
@@ -73,38 +91,27 @@ PROCESS_BYTES = Counter('wps_process_bytes', 'Number of bytes processed',
 PROCESS_SECONDS = Counter('wps_process_seconds', 'NUmber of seconds spent'
                           'processing data', ['identifier'])
 
-INGRESS_BYTES = Counter('wps_ingress_bytes', 'Number of ingressed bytes', ['host'])
+INGRESS_BYTES = Counter('wps_ingress_bytes',
+                        'Number of ingressed bytes', ['host'])
 
 INGRESS_SECONDS = Counter('wps_ingress_seconds', 'Number of seconds spent'
                           'ingressing data', ['host'])
 
 CACHE_BYTES = Counter('wps_cache_bytes', 'Number of cached bytes')
 
-CACHE_SECONDS = Counter('wps_cache_seconds', 'Number of seconds spent reading cache')
+CACHE_SECONDS = Counter('wps_cache_seconds',
+                        'Number of seconds spent reading cache')
 
 CACHE_FILES = Gauge('wps_cache_files', 'Number of cached files',
                     multiprocess_mode='livesum')
 
-WPS_REQUESTS = Histogram('wps_request_seconds', 'WPS request duration (seconds)', 
+WPS_REQUESTS = Histogram('wps_request_seconds', 'WPS request duration (seconds)',
                          ['request', 'method'])
 
 WPS_ERRORS = Counter('wps_errors', 'WPS Errors')
 
-FILE_ACCESSED = Counter('wps_file_accessed', 'Number of times files were accessed', 
+FILE_ACCESSED = Counter('wps_file_accessed', 'Number of times files were accessed',
                         ['host', 'filename', 'url', 'variable'])
-
-def serve_metrics():
-    from prometheus_client import make_wsgi_app
-    from prometheus_client import multiprocess
-    from wsgiref.simple_server import make_server
-
-    multiprocess.MultiProcessCollector(WPS)
-
-    app = make_wsgi_app(WPS)
-
-    httpd = make_server('0.0.0.0', 8080, app)
-
-    httpd.serve_forever()
 
 if __name__ == '__main__':
     from multiprocessing import Process
