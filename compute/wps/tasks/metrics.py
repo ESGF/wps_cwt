@@ -19,7 +19,6 @@ from wps.tasks import base
 
 logger = get_task_logger('wps.tasks.metrics')
 
-
 def query_prometheus(**kwargs):
     response = requests.get(settings.METRICS_HOST, params=kwargs)
 
@@ -39,25 +38,34 @@ def query_prometheus(**kwargs):
     return data['data']['result']
 
 
-def query_single_value(type=str, **kwargs):
+def query_single_value(type=int, **kwargs):
     try:
         data = query_prometheus(**kwargs)[0]
     except IndexError:
         return type()
 
-    return type(data['value'][1])
+    try:
+        return type(data['value'][1])
+    except (KeyError, IndexError):
+        return type()
 
-def query_multiple_value(key, type=str, **kwargs):
+def query_multiple_value(key, type=int, **kwargs):
     results = {}
 
     data = query_prometheus(**kwargs)
 
     for item in data:
-        name = item['metric'][key]
+        try:
+            name = item['metric'][key]
+        except (KeyError, TypeError):
+            continue
 
-        value = item['value'][1]
-
-        results[name] = value
+        try:
+            value = item['value'][1]
+        except (KeyError, IndexError):
+            result[name] = type()
+        else:
+            results[name] = type(value)
 
     return results
 
@@ -66,7 +74,7 @@ def query_multiple_value(key, type=str, **kwargs):
                        Returns the current metrics of the server.
                        """, data_inputs=[], metadata={'inputs': 0})
 @base.cwt_shared_task()
-def health(self, user_id, job_id, **kwargs):
+def metrics(self, user_id, job_id, **kwargs):
     job = self.load_job(job_id)
 
     user_jobs_queued = models.Job.objects.filter(status__status=models.ProcessAccepted).exclude(status__status=models.ProcessStarted).exclude(
