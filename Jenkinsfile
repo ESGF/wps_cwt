@@ -20,8 +20,6 @@ pipeline {
           export WPS_TEST=1
           export DJANGO_CONFIG_PATH=${PWD}/docker/common/django.properties
 
-          conda env remove -n wps -q -y > /dev/null 2>&1 || exit 1
-
           conda env create -n wps --file docker/common/environment.yml
 
           source activate wps
