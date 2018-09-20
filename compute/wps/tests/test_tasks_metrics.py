@@ -28,7 +28,7 @@ class TaskMetricsTestCase(test.TestCase):
 
         mock_filter.return_value.exclude.return_value.exclude.return_value.exclude.return_value.count.return_value = 2
 
-        tasks.metrics(0, 1)
+        tasks.metrics_task(0, 1)
 
         mock_job.assert_called_with(1)
 
