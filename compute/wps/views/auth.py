@@ -148,8 +148,6 @@ def create(request):
 
         return common.failed(str(e))
     else:
-        metrics.USERS.inc()
-
         return common.success('Successfully created account for "{}"'.format(data['username']))
 
 @require_http_methods(['POST'])
