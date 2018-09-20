@@ -525,9 +525,9 @@ class PreprocessTestCase(test.TestCase):
                 'cached': {
                     'path': './file1.nc',
                     'mapped': {
-                        'lat': slice(80, 180, 1),
-                        'lon': slice(10, 60, 1),
-                        'time': slice(0, 1500, 1),
+                        'lat': slice(80, 180),
+                        'lon': slice(10, 60),
+                        'time': slice(0, 1500),
                     }
                 },
                 'mapped': {

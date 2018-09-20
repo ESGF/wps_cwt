@@ -12,12 +12,13 @@ from wps.tasks import cdat
 
 # Need to use this to mock the return value of cdms2.open since 
 class MockFile(object):
-    def __init__(self):
+    def __init__(self, nbytes=0):
         self.called = False
         self.call_count = 0
         self.current = None
         self.returned = []
         self.mock_write = None
+        self.nbytes = nbytes
 
     def write(self, *args, **kwargs):
         self.mock_write = (args, kwargs)
@@ -28,6 +29,8 @@ class MockFile(object):
         self.call_count += 1
 
         value = mock.MagicMock()
+
+        type(value).nbytes = mock.PropertyMock(return_value=self.nbytes)
 
         self.returned.append((value, args, kwargs))
 
@@ -106,10 +109,18 @@ class CDATTaskTestCase(test.TestCase):
 
         mock_self = mock.MagicMock()
 
-        infile = MockFile()
-        outfile = MockFile()
+        infile = MockFile(1e9)
+        outfile = MockFile(1e9)
+
+        now = datetime.datetime.now()
 
         mock_self.open.return_value.__enter__.side_effect = [infile, outfile]
+        mock_self.get_now.side_effect = [
+            now,
+            now+datetime.timedelta(minutes=30),
+            now+datetime.timedelta(minutes=33),
+            now+datetime.timedelta(minutes=40),
+        ]
 
         op = cwt.Process('CDAT.subset')
 
@@ -141,10 +152,18 @@ class CDATTaskTestCase(test.TestCase):
 
         mock_self = mock.MagicMock()
 
-        infile = MockFile()
-        outfile = MockFile()
+        infile = MockFile(1e9)
+        outfile = MockFile(1e9)
+
+        now = datetime.datetime.now()
 
         mock_self.open.return_value.__enter__.side_effect = [infile, outfile]
+        mock_self.get_now.side_effect = [
+            now,
+            now+datetime.timedelta(minutes=30),
+            now+datetime.timedelta(minutes=33),
+            now+datetime.timedelta(minutes=40),
+        ]
 
         op = cwt.Process('CDAT.subset')
 
@@ -175,10 +194,18 @@ class CDATTaskTestCase(test.TestCase):
 
         mock_self = mock.MagicMock()
 
-        infile = MockFile()
-        outfile = MockFile()
+        infile = MockFile(1e9)
+        outfile = MockFile(1e9)
+
+        now = datetime.datetime.now()
 
         mock_self.open.return_value.__enter__.side_effect = [infile, outfile]
+        mock_self.get_now.side_effect = [
+            now,
+            now+datetime.timedelta(minutes=30),
+            now+datetime.timedelta(minutes=33),
+            now+datetime.timedelta(minutes=40),
+        ]
 
         op = cwt.Process('CDAT.subset')
 
@@ -251,10 +278,18 @@ class CDATTaskTestCase(test.TestCase):
 
         mock_self = mock.MagicMock()
 
-        infile = MockFile()
-        outfile = MockFile()
+        infile = MockFile(1e9)
+        outfile = MockFile(1e9)
+
+        now = datetime.datetime.now()
 
         mock_self.open.return_value.__enter__.side_effect = [infile, outfile]
+        mock_self.get_now.side_effect = [
+            now,
+            now+datetime.timedelta(minutes=30),
+            now+datetime.timedelta(minutes=33),
+            now+datetime.timedelta(minutes=40),
+        ]
 
         op = cwt.Process('CDAT.subset')
 
@@ -392,7 +427,18 @@ class CDATTaskTestCase(test.TestCase):
 
     @mock.patch('wps.tasks.cdat.retrieve_data')
     def test_retrieve_data_cached(self, mock_retrieve):
+        now = datetime.datetime.now()
+
+        type(mock_retrieve.return_value).nbytes = mock.PropertyMock(return_value=1e9)
+
         mock_self = mock.MagicMock()
+
+        mock_self.get_now.side_effect = [
+            now,
+            now+datetime.timedelta(minutes=30),
+            now+datetime.timedelta(minutes=32),
+            now+datetime.timedelta(minutes=52),
+        ]
 
         mock_infile = MockFile()
 
