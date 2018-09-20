@@ -224,7 +224,7 @@ class AuthViewsTestCase(test.TestCase):
         self.assertEqual(data['type'], 'myproxyclient')
 
     def test_oauth2_callback_invalid_state(self):
-        response = self.client.get('/auth/callback/', {})
+        response = self.client.get('/auth/callback', {})
 
         self.check_redirect(response, 1)
 
@@ -252,7 +252,7 @@ class AuthViewsTestCase(test.TestCase):
 
         session.save()
 
-        response = self.client.get('/auth/callback/', {})
+        response = self.client.get('/auth/callback', {})
 
         self.check_redirect(response, 1)
 

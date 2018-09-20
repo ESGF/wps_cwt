@@ -380,6 +380,8 @@ class PreprocessTestCase(test.TestCase):
             'time': slice(0, 2000),
         }
 
+        self.maxDiff = None
+
         type(mock_entries.return_value).dimensions = mock.PropertyMock(return_value=helpers.encoder(data))
         type(mock_entries.return_value).local_path = mock.PropertyMock(return_value='./file1.nc')
 
@@ -408,9 +410,9 @@ class PreprocessTestCase(test.TestCase):
                 'cached': {
                     'path': './file1.nc',
                     'mapped': {
-                        'lat': slice(80, 180),
-                        'lon': slice(10, 60),
-                        'time': slice(0, 1500),
+                        'lat': slice(80, 180, 1),
+                        'lon': slice(10, 60, 1),
+                        'time': slice(0, 1500, 1),
                     }
                 },
                 'mapped': {

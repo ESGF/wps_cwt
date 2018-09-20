@@ -19,7 +19,9 @@ pipeline {
         sh '''#! /bin/bash
           export WPS_TEST=1
           export DJANGO_CONFIG_PATH=${PWD}/docker/common/django.properties
-
+    
+          trap "conda env remove -n wps -y;" SIGINT SIGTERM EXIT
+          
           conda env remove -n wps -q -y > /dev/null 2>&1 || exit 1
 
           conda env create -n wps --file docker/common/environment.yml
