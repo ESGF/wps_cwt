@@ -74,7 +74,7 @@ def query_multiple_value(key, type=int, **kwargs):
                        Returns the current metrics of the server.
                        """, data_inputs=[], metadata={'inputs': 0})
 @base.cwt_shared_task()
-def metrics(self, user_id, job_id, **kwargs):
+def metrics_task(self, user_id, job_id, **kwargs):
     job = self.load_job(job_id)
 
     user_jobs_queued = models.Job.objects.filter(status__status=models.ProcessAccepted).exclude(status__status=models.ProcessStarted).exclude(
