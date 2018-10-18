@@ -540,13 +540,14 @@ class Job(models.Model):
         metrics.JOBS_QUEUED.labels(self.process.identifier).inc()
 
     def started(self):
-        status = self.status_set.create(status=ProcessStarted)
+        if not self.is_started:
+            status = self.status_set.create(status=ProcessStarted)
 
-        status.set_message('Job Started', self.steps_progress)
+            status.set_message('Job Started', self.steps_progress)
 
-        metrics.JOBS_IN_QUEUE.dec()
+            metrics.JOBS_IN_QUEUE.dec()
 
-        metrics.JOBS_RUNNING.inc()
+            metrics.JOBS_RUNNING.inc()
 
     def succeeded(self, output=None):
         if output is None:
@@ -563,7 +564,8 @@ class Job(models.Model):
         metrics.JOBS_COMPLETED.labels(self.process.identifier).inc()
 
     def failed(self, exception=None):
-        self.update('Job Failed')
+        if self.is_started:
+            self.update('Job Failed')
 
         if exception is None:
             exception = 'Unknown reason'
