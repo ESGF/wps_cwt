@@ -252,10 +252,18 @@ class CDATTaskTestCase(test.TestCase):
 
         mock_self = mock.MagicMock()
 
-        infile = MockFile()
-        outfile = MockFile()
+        infile = MockFile(1e9)
+        outfile = MockFile(1e9)
+
+        now = datetime.datetime.now()
 
         mock_self.open.return_value.__enter__.side_effect = [infile, outfile]
+        mock_self.get_now.side_effect = [
+            now,
+            now+datetime.timedelta(minutes=30),
+            now+datetime.timedelta(minutes=33),
+            now+datetime.timedelta(minutes=40),
+        ]
 
         op = cwt.Process('CDAT.average')
 
@@ -466,7 +474,18 @@ class CDATTaskTestCase(test.TestCase):
 
     @mock.patch('wps.tasks.cdat.retrieve_data')
     def test_retrieve_data_cached(self, mock_retrieve):
+        now = datetime.datetime.now()
+
+        type(mock_retrieve.return_value).nbytes = mock.PropertyMock(return_value=1e9)
+
         mock_self = mock.MagicMock()
+
+        mock_self.get_now.side_effect = [
+            now,
+            now+datetime.timedelta(minutes=30),
+            now+datetime.timedelta(minutes=32),
+            now+datetime.timedelta(minutes=52),
+        ]
 
         mock_infile = MockFile()
 
