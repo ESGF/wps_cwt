@@ -140,7 +140,9 @@ export class ProcessDetailComponent implements OnInit {
 
     process.inputs = this.files.filter((item: File) => { return item.included; });
 
-    process.variable = this.selectedVariable.id;
+    if (this.selectedVariable != null) {
+      process.variable = this.selectedVariable.id;
+    }
 
     process.domain = new Domain('', this.axes);
 
