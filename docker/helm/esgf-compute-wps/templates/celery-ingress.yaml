@@ -14,7 +14,7 @@ metadata:
     release: {{ $.Release.Name }}
 {{- if $annotations }}
   annotations:
-    {{ toYaml $annotations | indent 2 }}
+{{ toYaml $annotations | nindent 4 }}
 {{- end }}
 spec:
   rules:

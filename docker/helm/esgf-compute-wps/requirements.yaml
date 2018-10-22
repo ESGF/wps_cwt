@@ -5,9 +5,6 @@ dependencies:
   - name: redis
     version: 3.2.0
     repository: https://kubernetes-charts.storage.googleapis.com/
-  - name: traefik
-    version: 1.29.1
-    repository: https://kubernetes-charts.storage.googleapis.com/
   - name: prometheus
     version: 7.0.2
     repository: https://kubernetes-charts.storage.googleapis.com/

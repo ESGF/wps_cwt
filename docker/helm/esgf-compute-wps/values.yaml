@@ -62,45 +62,6 @@ prometheus:
       enabled: true
       existingClaim: prometheus-pvc
 
-traefik:
-  serviceType: NodePort
-
-  # Entrypoint SSL
-  #ssl:
-    #enabled: true
-    #enforced: true
-    #defaultCert:
-    #defaultKey:
-
-  cpuLimit: 200m
-  memoryLimit: 256Mi
-
-  rbac:
-    enabled: true
-
-  deployment:
-    hostPort:
-      httpEnabled: true
-      httpsEnabled: true
-
-  dashboard:
-    enabled: true
-    domain: ""
-
-    # Dashboard Authentication
-    # See for accepted passwords: https://docs.traefik.io/configuration/entrypoints/#basic-authentication
-    # Should be K/V pair e.g. user01: password
-    #auth:
-    #  basic:
-
-    ingress:
-      annotations:
-        traefik.frontend.rule.type: PathPrefixStrip
-        ingress.kubernetes.io/ssl-redirect: "true"
-        ingress.kubernetes.io/hsts-max-age: "31536000"
-        ingress.kubernetes.io/hsts-include-subdomains: "true"
-        ingress.kubernetes.io/force-hsts: "true"
-
 nginx:
   replicas: 1
   image: nginx
@@ -111,6 +72,13 @@ nginx:
     memoryRequest: 128Mi
     cpuLimit: 200m
     memoryLimit: 512Mi
+
+  ingress:
+    annotations:
+      ingress.kubernetes.io/ssl-redirect: "true"
+      ingress.kubernetes.io/hsts-max-age: "31536000"
+      ingress.kubernetes.io/hsts-include-subdomains: "true"
+      ingress.kubernetes.io/force-hsts: "true"
   
 wps:
   replicas: 1
