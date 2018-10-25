@@ -1,41 +1,37 @@
-traefik:
-  imageTag: 1.7.0
+serviceType: NodePort
 
-  serviceType: NodePort
+# Entrypoint SSL
+#ssl:
+#  enabled: true
+#  enforced: true
+#  defaultCert:
+#  defaultKey: 
 
-  # Entrypoint SSL
-  #ssl:
-    #enabled: true
-    #enforced: true
-    #defaultCert:
-    #defaultKey:
+cpuLimit: 200m
+memoryLimit: 256Mi
 
-  cpuLimit: 200m
-  memoryLimit: 256Mi
+rbac:
+  enabled: true
 
-  rbac:
-    enabled: true
+deployment:
+  hostPort:
+    httpEnabled: true
+    httpsEnabled: true
 
-  deployment:
-    hostPort:
-      httpEnabled: true
-      httpsEnabled: true
+dashboard:
+  enabled: true
+  domain: ""
 
-  dashboard:
-    enabled: true
-    domain: ""
+  # Dashboard Authentication
+  # See for accepted passwords: https://docs.traefik.io/configuration/entrypoints/#basic-authentication
+  # Should be K/V pair e.g. user01: password
+  #auth:
+  #  basic:
 
-    # Dashboard Authentication
-    # See for accepted passwords: https://docs.traefik.io/configuration/entrypoints/#basic-authentication
-    # Should be K/V pair e.g. user01: password
-    #auth:
-    #  basic:
-
-    ingress:
-      annotations:
-        traefik.frontend.rule.type: PathPrefixStrip
-        ingress.kubernetes.io/ssl-redirect: "true"
-        ingress.kubernetes.io/hsts-max-age: "31536000"
-        ingress.kubernetes.io/hsts-include-subdomains: "true"
-        ingress.kubernetes.io/force-hsts: "true"
-
+  ingress:
+    annotations:
+      traefik.frontend.rule.type: PathPrefixStrip
+      ingress.kubernetes.io/ssl-redirect: "true"
+      ingress.kubernetes.io/hsts-max-age: "31536000"
+      ingress.kubernetes.io/hsts-include-subdomains: "true"
+      ingress.kubernetes.io/force-hsts: "true"
